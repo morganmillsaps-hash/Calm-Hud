@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=600, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Calm HUD</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+      color: #fff;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Meta Display canvas */
+    .hud {
+      width: 600px;
+      height: 600px;
+      position: relative;
+      overflow: hidden;
+      background: #000;
+    }
+
+    .screen {
+      position: absolute;
+      inset: 0;
+      padding: 58px 60px 48px;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    .eyebrow {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 5px;
+      text-transform: uppercase;
+      opacity: 0.7;
+      margin-bottom: 22px;
+    }
+
+    .big-time {
+      font-size: 112px;
+      line-height: 1;
+      font-weight: 700;
+      letter-spacing: -6px;
+      margin-bottom: 20px;
+    }
+
+    .status {
+      font-size: 29px;
+      line-height: 1.25;
+      font-weight: 600;
+    }
+
+    .subtext {
+      margin-top: 16px;
+      font-size: 21px;
+      line-height: 1.35;
+      opacity: 0.72;
+      max-width: 430px;
+    }
+
+    .hint {
+      position: absolute;
+      bottom: 28px;
+      left: 0;
+      right: 0;
+      font-size: 16px;
+      letter-spacing: 1px;
+      opacity: 0.48;
+      text-align: center;
+    }
+
+    /* Breathing */
+
+    .breath-circle {
+      width: 220px;
+      height: 220px;
+      border: 4px solid #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 34px;
+      transform: scale(0.86);
+    }
+
+    .breath-circle.inhale {
+      transform: scale(1.05);
+      transition: transform 4s linear;
+    }
+
+    .breath-circle.hold {
+      transform: scale(1.05);
+      transition: none;
+    }
+
+    .breath-circle.exhale {
+      transform: scale(0.78);
+      transition: transform 6s linear;
+    }
+
+    .breath-count {
+      font-size: 76px;
+      font-weight: 700;
+    }
+
+    .phase {
+      font-size: 48px;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    .instruction {
+      margin-top: 12px;
+      font-size: 23px;
+      opacity: 0.72;
+    }
+
+    /* Reminder */
+
+    .reminder-title {
+      font-size: 52px;
+      font-weight: 700;
+      line-height: 1.08;
+      max-width: 470px;
+    }
+
+    .reminder-copy {
+      margin-top: 24px;
+      font-size: 27px;
+      opacity: 0.78;
+    }
+
+    /* Focus screen */
+
+    .focus-title {
+      font-size: 26px;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      opacity: 0.65;
+      margin-bottom: 28px;
+    }
+
+    .focus-text {
+      font-size: 52px;
+      line-height: 1.12;
+      font-weight: 700;
+      max-width: 480px;
+    }
+
+    /* navigation dots */
+
+    .dots {
+      position: absolute;
+      bottom: 60px;
+      display: flex;
+      gap: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.25);
+    }
+
+    .dot.active {
+      background: #fff;
+    }
+
+    /* flash message */
+
+    .toast {
+      position: absolute;
+      top: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 20px;
+      background: #181818;
+      border-radius: 999px;
+      font-size: 18px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="hud">
+
+    <!-- TIMER -->
+    <section class="screen active" id="timerScreen">
+      <div class="eyebrow">Calm HUD</div>
+
+      <div class="big-time" id="timerDisplay">
+        25:00
+      </div>
+
+      <div class="status" id="timerStatus">
+        Ready to focus
+      </div>
+
+      <div class="subtext">
+        Pinch to start
+      </div>
+
+      <div class="hint">
+        ← → change screen · enter select
+      </div>
+    </section>
+
+
+    <!-- BREATHING -->
+    <section class="screen" id="breathScreen">
+
+      <div
+        id="breathCircle"
+        class="breath-circle inhale"
+      >
+        <div
+          id="breathCount"
+          class="breath-count"
+        >
+          4
+        </div>
+      </div>
+
+      <div
+        id="breathPhase"
+        class="phase"
+      >
+        Inhale
+      </div>
+
+      <div
+        id="breathInstruction"
+        class="instruction"
+      >
+        Breathe in slowly
+      </div>
+
+      <div class="hint">
+        pinch start/pause · ↓ reset
+      </div>
+
+    </section>
+
+
+    <!-- FOCUS -->
+    <section class="screen" id="focusScreen">
+
+      <div class="focus-title">
+        Focus
+      </div>
+
+      <div class="focus-text">
+        Finish emails gently.
+      </div>
+
+      <div class="subtext">
+        One thing at a time.
+      </div>
+
+      <div class="hint">
+        ← → change screen
+      </div>
+
+    </section>
+
+
+    <!-- RESET -->
+    <section class="screen" id="resetScreen">
+
+      <div class="eyebrow">
+        Reset
+      </div>
+
+      <div class="reminder-title">
+        Relax your shoulders.
+      </div>
+
+      <div class="reminder-copy">
+        Take 3 slow breaths.
+      </div>
+
+      <div class="hint">
+        pinch to breathe
+      </div>
+
+    </section>
+
+
+    <div class="dots" id="dots"></div>
+
+    <div
+      class="toast"
+      id="toast"
+    ></div>
+
+  </main>
+
+
+  <script>
+
+    // ---------------------------------
+    // Screens
+    // ---------------------------------
+
+    const screens = [
+      "timerScreen",
+      "breathScreen",
+      "focusScreen",
+      "resetScreen"
+    ];
+
+    let screenIndex = 0;
+
+    const dotsEl =
+      document.getElementById("dots");
+
+    function buildDots() {
+
+      dotsEl.innerHTML = "";
+
+      screens.forEach((_, index) => {
+
+        const dot =
+          document.createElement("div");
+
+        dot.className =
+          "dot" +
+          (index === screenIndex
+            ? " active"
+            : "");
+
+        dotsEl.appendChild(dot);
+
+      });
+
+    }
+
+
+    function showScreen(index) {
+
+      if (index < 0) {
+        index = screens.length - 1;
+      }
+
+      if (index >= screens.length) {
+        index = 0;
+      }
+
+      screenIndex = index;
+
+      screens.forEach((id, i) => {
+
+        document
+          .getElementById(id)
+          .classList.toggle(
+            "active",
+            i === screenIndex
+          );
+
+      });
+
+      buildDots();
+
+    }
+
+
+    function nextScreen() {
+      showScreen(screenIndex + 1);
+    }
+
+
+    function previousScreen() {
+      showScreen(screenIndex - 1);
+    }
+
+
+
+    // ---------------------------------
+    // Toast
+    // ---------------------------------
+
+    const toastEl =
+      document.getElementById("toast");
+
+    let toastTimer = null;
+
+    function showToast(message) {
+
+      toastEl.textContent = message;
+      toastEl.classList.add("show");
+
+      clearTimeout(toastTimer);
+
+      toastTimer =
+        setTimeout(() => {
+          toastEl.classList.remove("show");
+        }, 1200);
+
+    }
+
+
+
+    // ---------------------------------
+    // Focus Timer
+    // ---------------------------------
+
+    let focusSeconds = 25 * 60;
+    let focusTimer = null;
+
+    const timerDisplayEl =
+      document.getElementById(
+        "timerDisplay"
+      );
+
+    const timerStatusEl =
+      document.getElementById(
+        "timerStatus"
+      );
+
+
+    function updateFocusTimerDisplay() {
+
+      const minutes =
+        Math.floor(
+          focusSeconds / 60
+        );
+
+      const seconds =
+        focusSeconds % 60;
+
+      timerDisplayEl.textContent =
+        String(minutes).padStart(2, "0")
+        +
+        ":"
+        +
+        String(seconds).padStart(2, "0");
+
+    }
+
+
+    function startFocusTimer() {
+
+      if (focusTimer) {
+
+        pauseFocusTimer();
+        return;
+
+      }
+
+      timerStatusEl.textContent =
+        "Focus gently";
+
+      focusTimer =
+        setInterval(() => {
+
+          if (focusSeconds > 0) {
+
+            focusSeconds--;
+
+            updateFocusTimerDisplay();
+
+          } else {
+
+            clearInterval(focusTimer);
+            focusTimer = null;
+
+            timerStatusEl.textContent =
+              "Complete";
+
+            showScreen(3);
+
+          }
+
+        }, 1000);
+
+      showToast("Focus started");
+
+    }
+
+
+    function pauseFocusTimer() {
+
+      clearInterval(focusTimer);
+
+      focusTimer = null;
+
+      timerStatusEl.textContent =
+        "Paused";
+
+      showToast("Paused");
+
+    }
+
+
+    function resetFocusTimer() {
+
+      clearInterval(focusTimer);
+
+      focusTimer = null;
+
+      focusSeconds = 25 * 60;
+
+      timerStatusEl.textContent =
+        "Ready to focus";
+
+      updateFocusTimerDisplay();
+
+      showToast("Timer reset");
+
+    }
+
+
+
+    // ---------------------------------
+    // Breathing
+    // ---------------------------------
+
+    const breathPhases = [
+
+      {
+        name: "Inhale",
+        seconds: 4,
+        instruction:
+          "Breathe in slowly",
+        className: "inhale"
+      },
+
+      {
+        name: "Hold",
+        seconds: 4,
+        instruction:
+          "Rest at the top",
+        className: "hold"
+      },
+
+      {
+        name: "Exhale",
+        seconds: 6,
+        instruction:
+          "Let your shoulders drop",
+        className: "exhale"
+      }
+
+    ];
+
+
+    let phaseIndex = 0;
+
+    let breathRemaining =
+      breathPhases[0].seconds;
+
+    let breathTimer = null;
+
+
+    const breathCircleEl =
+      document.getElementById(
+        "breathCircle"
+      );
+
+    const breathCountEl =
+      document.getElementById(
+        "breathCount"
+      );
+
+    const breathPhaseEl =
+      document.getElementById(
+        "breathPhase"
+      );
+
+    const breathInstructionEl =
+      document.getElementById(
+        "breathInstruction"
+      );
+
+
+    function updateBreathingScreen() {
+
+      const phase =
+        breathPhases[phaseIndex];
+
+      breathPhaseEl.textContent =
+        phase.name;
+
+      breathInstructionEl.textContent =
+        phase.instruction;
+
+      breathCountEl.textContent =
+        breathRemaining;
+
+      breathCircleEl.className =
+        "breath-circle "
+        +
+        phase.className;
+
+    }
+
+
+    function breathTick() {
+
+      breathRemaining--;
+
+      if (breathRemaining <= 0) {
+
+        phaseIndex =
+          (phaseIndex + 1)
+          %
+          breathPhases.length;
+
+        breathRemaining =
+          breathPhases[
+            phaseIndex
+          ].seconds;
+
+      }
+
+      updateBreathingScreen();
+
+    }
+
+
+    function toggleBreathing() {
+
+      if (breathTimer) {
+
+        clearInterval(
+          breathTimer
+        );
+
+        breathTimer = null;
+
+        showToast("Breathing paused");
+
+        return;
+
+      }
+
+      updateBreathingScreen();
+
+      breathTimer =
+        setInterval(
+          breathTick,
+          1000
+        );
+
+      showToast("Breathe");
+
+    }
+
+
+    function resetBreathing() {
+
+      clearInterval(
+        breathTimer
+      );
+
+      breathTimer = null;
+
+      phaseIndex = 0;
+
+      breathRemaining =
+        breathPhases[0].seconds;
+
+      updateBreathingScreen();
+
+      showToast("Breath reset");
+
+    }
+
+
+
+    // ---------------------------------
+    // SELECT / ENTER
+    // ---------------------------------
+
+    function selectCurrentScreen() {
+
+      switch (screenIndex) {
+
+        case 0:
+          startFocusTimer();
+          break;
+
+        case 1:
+          toggleBreathing();
+          break;
+
+        case 2:
+          showToast("Stay with one task");
+          break;
+
+        case 3:
+          showScreen(1);
+          toggleBreathing();
+          break;
+
+      }
+
+    }
+
+
+
+    // ---------------------------------
+    // Display / Neural Band controls
+    // ---------------------------------
+
+    /*
+      Browser testing:
+
+      LEFT / RIGHT
+      = switch screens
+
+      ENTER
+      = pinch / select
+
+      DOWN
+      = reset current function
+
+      ESC
+      = return to timer
+    */
+
+    document.addEventListener(
+      "keydown",
+      function(event) {
+
+        switch(event.key) {
+
+          case "ArrowRight":
+
+            event.preventDefault();
+
+            nextScreen();
+
+            break;
+
+
+          case "ArrowLeft":
+
+            event.preventDefault();
+
+            previousScreen();
+
+            break;
+
+
+          case "Enter":
+
+            event.preventDefault();
+
+            selectCurrentScreen();
+
+            break;
+
+
+          case "ArrowDown":
+
+            event.preventDefault();
+
+            if (screenIndex === 0) {
+
+              resetFocusTimer();
+
+            }
+
+            if (screenIndex === 1) {
+
+              resetBreathing();
+
+            }
+
+            break;
+
+
+          case "ArrowUp":
+
+            event.preventDefault();
+
+            showScreen(0);
+
+            break;
+
+
+          case "Escape":
+
+          case "Backspace":
+
+            event.preventDefault();
+
+            showScreen(0);
+
+            break;
+
+        }
+
+      }
+    );
+
+
+
+    // ---------------------------------
+    // Initial state
+    // ---------------------------------
+
+    updateFocusTimerDisplay();
+    updateBreathingScreen();
+    buildDots();
+
+  </script>
+
+</body>
+</html>
